@@ -1,0 +1,509 @@
+{
+  "$schema-note": "Test cases for the Engineering Intake Engine. Each case feeds `input` to a fresh IntakeSession and checks the resulting brief. Only the keys present in `expect` are checked. Field ids look like 'material.componentCount'.",
+  "keys": {
+    "known": "{ fieldId: value } — status KNOWN with exactly this value",
+    "inferred": "{ fieldId: value } — status INFERRED with exactly this value (never a fact until confirmed)",
+    "review": "{ fieldId: value|null } — status REQUIRES_ENGINEER_REVIEW; null = no value may be stored (ranges, bounds, qualitative statements)",
+    "unknown": "[fieldId] — no value and not stated",
+    "userUnknown": "[fieldId] — the user said they do not know it yet",
+    "conflict": "[fieldId] — two different stated values: no value, both kept as candidates",
+    "next": "{ field, mode? } — the single next question",
+    "notAsked": "[fieldId] — must never be asked, even when every question is skipped",
+    "missing": "{ fieldId: reason } — present in the missing list with that reason",
+    "missingRequiredEmpty": "true — no REQUIRED field is missing",
+    "platforms": "'none' | [name prefixes] — preliminary platform context",
+    "flags": "[review flag id or id prefix] — must appear in the engineer review notes",
+    "rfq": "{ contains: [text], notProvided: [label] } — RFQ draft checks (runs of spaces collapsed)",
+    "knownCount": "number of KNOWN fields in the brief",
+    "completeness": "{ min, max } — visual indicator range",
+    "notice": "substring of an info notice shown to the user"
+  },
+  "cases": [
+    {
+      "id": "TC-01",
+      "name": "Spec example 1 — 500 modules/hour, two-component epoxy",
+      "input": "We need to pot 500 electronic modules per hour using a two-component epoxy.",
+      "expect": {
+        "known": { "material.componentCount": 2, "material.chemistry": "epoxy", "production.productionRate": 500, "production.productionUnit": "parts/hour" },
+        "unknown": ["mixing.ratio", "production.flowRate", "production.shotSize", "properties.viscosityA", "properties.viscosityB", "automation.automationLevel", "properties.temperature"],
+        "next": { "field": "mixing.ratio", "mode": "ASK" },
+        "notAsked": ["material.componentCount", "material.chemistry", "production.productionRate", "production.productionUnit"],
+        "platforms": "none",
+        "rfq": { "contains": ["Components: 2", "Material: Epoxy", "Production: 500 parts/hour"], "notProvided": ["Ratio", "Viscosity", "Flow Rate", "Shot Size", "Automation"] }
+      }
+    },
+    {
+      "id": "TC-02",
+      "name": "Spec example 2 — 10:1 epoxy at 100 cc/min (component count only inferred)",
+      "input": "We use a 10:1 epoxy and need 100 cc/min.",
+      "expect": {
+        "known": { "mixing.ratio": "10:1", "material.chemistry": "epoxy", "production.flowRate": 100, "production.flowUnit": "cc/min" },
+        "inferred": { "material.componentCount": 2 },
+        "unknown": ["production.shotSize", "production.productionRate", "properties.viscosityA"],
+        "next": { "field": "properties.viscosityA" },
+        "notAsked": ["mixing.ratio", "production.flowRate", "production.flowUnit", "material.chemistry"],
+        "platforms": "none",
+        "flags": ["INFERRED"],
+        "rfq": { "contains": ["Components: 2 (inferred — unconfirmed)", "Ratio: 10:1", "Flow Rate: 100 cc/min"], "notProvided": ["Shot Size", "Production"] }
+      }
+    },
+    {
+      "id": "TC-03",
+      "name": "Spec example 3 — automated dispensing of polyurethane",
+      "input": "We need automated dispensing of polyurethane.",
+      "expect": {
+        "known": { "material.chemistry": "polyurethane", "automation.automationLevel": "Automated" },
+        "unknown": ["material.componentCount", "mixing.ratio", "production.productionRate", "production.shotSize", "properties.viscosityA"],
+        "next": { "field": "material.componentCount" },
+        "notAsked": ["material.chemistry", "automation.automationLevel"]
+      }
+    },
+    {
+      "id": "TC-04",
+      "name": "Spec example 4 — manual dispensing of silicone into electronic housings",
+      "input": "We manually dispense silicone into electronic housings.",
+      "expect": {
+        "known": { "material.chemistry": "silicone", "automation.automationLevel": "Manual", "part.partDescription": "electronic housings" },
+        "unknown": ["material.componentCount", "production.productionRate"],
+        "next": { "field": "material.componentCount" },
+        "notAsked": ["material.chemistry", "automation.automationLevel", "part.partDescription"]
+      }
+    },
+    {
+      "id": "TC-05",
+      "name": "Spec example 5 — 2,000 parts per week (thousands separator, encapsulation)",
+      "input": "We need to encapsulate 2,000 parts per week.",
+      "expect": {
+        "known": { "production.productionRate": 2000, "production.productionUnit": "parts/week", "application.category": "Potting & Encapsulation", "application.subcategory": "Encapsulation" },
+        "unknown": ["mixing.ratio", "production.shotSize"],
+        "notAsked": ["production.productionRate", "production.productionUnit"]
+      }
+    },
+    {
+      "id": "TC-06",
+      "name": "Spec example 6 — a robotic potting system (automation level is inferred, not stated)",
+      "input": "We need a robotic potting system.",
+      "expect": {
+        "known": { "automation.robotic": true, "application.subcategory": "Potting" },
+        "inferred": { "automation.automationLevel": "Automated" },
+        "flags": ["INFERRED"],
+        "notAsked": ["automation.robotic"],
+        "rfq": { "contains": ["Automation: Automated, robotic handling (inferred — unconfirmed)"] }
+      }
+    },
+    {
+      "id": "TC-07",
+      "name": "Spec example 7 — three components with a 1:1:1 ratio",
+      "input": "We have three components with a 1:1:1 ratio.",
+      "expect": {
+        "known": { "material.componentCount": 3, "mixing.ratio": "1:1:1" },
+        "unknown": ["material.chemistry", "production.productionRate", "properties.viscosityA"],
+        "next": { "field": "material.chemistry" },
+        "notAsked": ["material.componentCount", "mixing.ratio"],
+        "platforms": ["PK3D"],
+        "rfq": { "contains": ["Components: 3", "Ratio: 1:1:1"] }
+      }
+    },
+    {
+      "id": "TC-08",
+      "name": "Spec example 8 — \"We don't know the viscosity yet.\"",
+      "input": "We don't know the viscosity yet.",
+      "expect": {
+        "userUnknown": ["properties.viscosityA", "properties.viscosityB"],
+        "next": { "field": "material.componentCount" },
+        "notAsked": ["properties.viscosityA", "properties.viscosityB"],
+        "missing": { "properties.viscosityA": "USER_UNKNOWN", "properties.viscosityB": "USER_UNKNOWN" },
+        "flags": ["USER_UNKNOWN"],
+        "knownCount": 0,
+        "rfq": { "notProvided": ["Viscosity"] }
+      }
+    },
+    {
+      "id": "TC-09",
+      "name": "Demo case (LOAD DEMO CASE)",
+      "input": "We need to automatically pot 500 electronic modules per hour using a two-component epoxy. The material is mixed at 10:1 and we dispense approximately 15 grams per part.",
+      "expect": {
+        "known": {
+          "material.componentCount": 2,
+          "material.chemistry": "epoxy",
+          "mixing.ratio": "10:1",
+          "production.productionRate": 500,
+          "production.productionUnit": "parts/hour",
+          "production.shotSize": 15,
+          "production.shotSizeUnit": "g",
+          "automation.automationLevel": "Automated"
+        },
+        "unknown": ["properties.viscosityA", "properties.viscosityB", "production.flowRate"],
+        "next": { "field": "properties.viscosityA" },
+        "notAsked": ["material.componentCount", "material.chemistry", "mixing.ratio", "production.productionRate", "production.shotSize", "automation.automationLevel"],
+        "platforms": ["PK1D", "PK2D"],
+        "completeness": { "min": 40, "max": 70 },
+        "rfq": {
+          "contains": ["Components: 2", "Material: Epoxy", "Ratio: 10:1", "Shot Size: 15 g", "Production: 500 parts/hour", "Automation: Automated"],
+          "notProvided": ["Viscosity", "Flow Rate"]
+        }
+      }
+    },
+    {
+      "id": "TC-10",
+      "name": "Ratio written as \"10 to 1\" with a final period",
+      "input": "We use a 2 component epoxy mixed 10 to 1.",
+      "expect": {
+        "known": { "material.componentCount": 2, "mixing.ratio": "10:1", "material.chemistry": "epoxy" },
+        "platforms": ["PK1D", "PK2D"]
+      }
+    },
+    {
+      "id": "TC-11",
+      "name": "\"2-part\" system and flow written as \"100 cc per minute\"",
+      "input": "The epoxy is a 2-part system, 100 cc per minute.",
+      "expect": {
+        "known": { "material.componentCount": 2, "production.flowRate": 100, "production.flowUnit": "cc/min" },
+        "notAsked": ["production.flowRate"]
+      }
+    },
+    {
+      "id": "TC-12",
+      "name": "Qualitative viscosity (\"high viscosity\") never becomes a number",
+      "input": "Our resin has high viscosity and we pot about 30 parts per minute.",
+      "expect": {
+        "review": { "properties.viscosityA": null, "properties.viscosityB": null },
+        "known": { "production.productionRate": 30, "production.productionUnit": "parts/minute" },
+        "missing": { "properties.viscosityA": "NEEDS_DETAIL" },
+        "flags": ["REVIEW:properties.viscosityA"]
+      }
+    },
+    {
+      "id": "TC-13",
+      "name": "Viscosity by role word (resin / hardener): assigned to A / B as INFERRED only",
+      "input": "Resin viscosity is 5000 cP and hardener viscosity is 200 cP.",
+      "expect": {
+        "inferred": { "properties.viscosityA": 5000, "properties.viscosityB": 200 },
+        "known": { "properties.viscosityUnit": "cP" },
+        "flags": ["INFERRED"]
+      }
+    },
+    {
+      "id": "TC-14",
+      "name": "Viscosity per named component",
+      "input": "The viscosity of component A is 5000 cP and component B is 200 cP.",
+      "expect": {
+        "known": { "properties.viscosityA": 5000, "properties.viscosityB": 200, "properties.viscosityUnit": "cP" },
+        "inferred": { "material.componentCount": 2 },
+        "notAsked": ["properties.viscosityA", "properties.viscosityB"]
+      }
+    },
+    {
+      "id": "TC-15",
+      "name": "Conflicting ratios in one message",
+      "input": "We mix it 10:1, actually maybe 5:1, not sure.",
+      "expect": {
+        "conflict": ["mixing.ratio"],
+        "review": { "mixing.ratio": null },
+        "next": { "field": "mixing.ratio", "mode": "CLARIFY" },
+        "flags": ["CONFLICT:mixing.ratio"],
+        "platforms": "none"
+      }
+    },
+    {
+      "id": "TC-16",
+      "name": "Shot size as a range is not a value",
+      "input": "We dispense between 10 and 20 grams per shot.",
+      "expect": {
+        "review": { "production.shotSize": null },
+        "known": { "production.shotSizeUnit": "g" },
+        "missing": { "production.shotSize": "NEEDS_DETAIL" }
+      }
+    },
+    {
+      "id": "TC-17",
+      "name": "\"Up to\" is a bound, not a production rate",
+      "input": "We need up to 600 parts per hour.",
+      "expect": {
+        "review": { "production.productionRate": null },
+        "known": { "production.productionUnit": "parts/hour" }
+      }
+    },
+    {
+      "id": "TC-18",
+      "name": "Negation plus explicit manual wording",
+      "input": "The process is not automated, operators dispense by hand.",
+      "expect": {
+        "known": { "automation.automationLevel": "Manual" },
+        "notAsked": ["automation.automationLevel"]
+      }
+    },
+    {
+      "id": "TC-19",
+      "name": "Single-component silicone, semi-automatic: ratio does not apply",
+      "input": "We use semi-automatic dispensing for a one-component silicone.",
+      "expect": {
+        "known": { "automation.automationLevel": "Semi-automatic", "material.componentCount": 1, "material.chemistry": "silicone" },
+        "notAsked": ["mixing.ratio", "properties.viscosityB"],
+        "platforms": "none",
+        "flags": ["SINGLE_COMPONENT"],
+        "rfq": { "contains": ["Ratio: Not applicable (single-component material)"] }
+      }
+    },
+    {
+      "id": "TC-20",
+      "name": "Two components stated but a three-term ratio: ask, do not guess",
+      "input": "We use a two-component epoxy with a 1:1:1 ratio.",
+      "expect": {
+        "known": { "material.componentCount": 2, "mixing.ratio": "1:1:1" },
+        "next": { "field": "material.componentCount", "mode": "CLARIFY" },
+        "platforms": "none",
+        "flags": ["RATIO_COMPONENT_MISMATCH"]
+      }
+    },
+    {
+      "id": "TC-21",
+      "name": "Filled material, temperature with unit, decimal comma",
+      "input": "The material is silicone, glass-filled, heated to 60 °C, with a shot of 1,5 g.",
+      "expect": {
+        "known": { "material.chemistry": "silicone", "properties.filled": true, "properties.temperature": 60, "properties.temperatureUnit": "°C", "production.shotSize": 1.5, "production.shotSizeUnit": "g" },
+        "flags": ["FILLED_MATERIAL"],
+        "notAsked": ["properties.temperature", "production.shotSize"]
+      }
+    },
+    {
+      "id": "TC-22",
+      "name": "Four components: custom / higher-complexity context only",
+      "input": "We have four components.",
+      "expect": {
+        "known": { "material.componentCount": 4 },
+        "platforms": ["PK6D"]
+      }
+    },
+    {
+      "id": "TC-23",
+      "name": "Out-of-scope application (bonding) is flagged, not silently accepted",
+      "input": "We need to bond windshields with an adhesive.",
+      "expect": {
+        "review": { "application.category": "Potting & Encapsulation" },
+        "platforms": "none",
+        "rfq": { "contains": ["may belong to a different application"] }
+      }
+    },
+    {
+      "id": "TC-24",
+      "name": "Nothing technical in the text: nothing is invented",
+      "input": "hello",
+      "expect": {
+        "knownCount": 0,
+        "next": { "field": "material.componentCount" },
+        "notice": "could not extract",
+        "platforms": "none",
+        "completeness": { "min": 0, "max": 10 }
+      }
+    },
+    {
+      "id": "TC-25",
+      "name": "Gibberish: nothing is invented",
+      "input": "asdf qwerty 123",
+      "expect": {
+        "knownCount": 0,
+        "unknown": ["material.chemistry", "mixing.ratio", "production.productionRate", "production.shotSize", "production.flowRate"],
+        "notice": "could not extract"
+      }
+    },
+    {
+      "id": "TC-26",
+      "name": "Production rate as a range",
+      "input": "We run 400-600 parts per hour.",
+      "expect": {
+        "review": { "production.productionRate": null },
+        "known": { "production.productionUnit": "parts/hour" }
+      }
+    },
+    {
+      "id": "TC-27",
+      "name": "Robot arm, \"10 to 1 by weight\", 2-part polyurethane, shots per minute",
+      "input": "We dispense with a robot arm, 10 to 1 by weight, 2-part polyurethane, 3 g per shot, 20 shots a minute.",
+      "expect": {
+        "known": {
+          "mixing.ratio": "10:1",
+          "material.componentCount": 2,
+          "material.chemistry": "polyurethane",
+          "production.shotSize": 3,
+          "production.shotSizeUnit": "g",
+          "production.productionRate": 20,
+          "production.productionUnit": "parts/minute",
+          "automation.robotic": true
+        },
+        "inferred": { "automation.automationLevel": "Automated" },
+        "rfq": { "contains": ["Ratio: 10:1 (by weight)"] }
+      }
+    },
+    {
+      "id": "TC-28",
+      "name": "Complete description: no REQUIRED field is missing",
+      "input": "We pot 500 control modules per hour with an automated robotic cell. The two-component epoxy is mixed 10:1 by volume. Component A viscosity is 8000 cP and component B is 300 cP. Shot size is 12 g per part and the flow rate is 100 cc/min. The modules are PCBs in plastic housings and the line is on a clean factory floor.",
+      "expect": {
+        "known": {
+          "material.componentCount": 2,
+          "material.chemistry": "epoxy",
+          "mixing.ratio": "10:1",
+          "properties.viscosityA": 8000,
+          "properties.viscosityB": 300,
+          "production.shotSize": 12,
+          "production.flowRate": 100,
+          "production.productionRate": 500,
+          "automation.automationLevel": "Automated"
+        },
+        "missingRequiredEmpty": true,
+        "next": { "field": "properties.filled" },
+        "completeness": { "min": 75, "max": 100 },
+        "platforms": ["PK1D", "PK2D"],
+        "rfq": { "contains": ["Ratio: 10:1 (by volume)", "Viscosity: Component A — 8,000 cP"] }
+      }
+    },
+    {
+      "id": "TC-29",
+      "name": "Hazardous environment is flagged for the engineer, not assessed",
+      "input": "The potting area is an explosive atmosphere, ATEX zone 1.",
+      "expect": {
+        "review": { "environment.hazardousEnvironment": true },
+        "flags": ["REVIEW:environment.hazardousEnvironment"],
+        "rfq": { "contains": ["Hazardous environment stated (requires engineer review)"] }
+      }
+    },
+    {
+      "id": "TC-30",
+      "name": "Negated robot and conveyor",
+      "input": "We have no robot and no conveyor.",
+      "expect": {
+        "known": { "automation.robotic": false, "automation.conveyor": false }
+      }
+    },
+    {
+      "id": "TC-31",
+      "name": "Cycle time in seconds",
+      "input": "The cycle time is 12 seconds.",
+      "expect": {
+        "known": { "production.cycleTime": 12, "production.cycleTimeUnit": "s" }
+      }
+    },
+    {
+      "id": "TC-32",
+      "name": "\"100k parts per year\"",
+      "input": "We make 100k parts per year.",
+      "expect": {
+        "known": { "production.productionRate": 100000, "production.productionUnit": "parts/year" }
+      }
+    },
+    {
+      "id": "TC-33",
+      "name": "Two different component counts in one message",
+      "input": "We use a two-component epoxy, actually three components.",
+      "expect": {
+        "conflict": ["material.componentCount"],
+        "review": { "material.componentCount": null },
+        "next": { "field": "material.componentCount", "mode": "CLARIFY" },
+        "platforms": "none"
+      }
+    },
+    {
+      "id": "TC-34",
+      "name": "Abrasive / thixotropic are flagged, never asked or assessed",
+      "input": "The material is abrasive and thixotropic.",
+      "expect": {
+        "review": { "properties.abrasive": true, "properties.thixotropic": true },
+        "notAsked": ["properties.abrasive", "properties.thixotropic"]
+      }
+    },
+    {
+      "id": "TC-35",
+      "name": "A bare \"500 per hour\" is a number without a unit noun: inferred",
+      "input": "We need about 500 per hour.",
+      "expect": {
+        "inferred": { "production.productionRate": 500, "production.productionUnit": "parts/hour" },
+        "flags": ["INFERRED"],
+        "rfq": { "contains": ["Production: 500 parts/hour (inferred — unconfirmed)"] }
+      }
+    },
+    {
+      "id": "TC-36",
+      "name": "Shot written as \"2.5 ml shots\"",
+      "input": "We pour 2.5 ml shots.",
+      "expect": {
+        "known": { "production.shotSize": 2.5, "production.shotSizeUnit": "ml" }
+      }
+    },
+    {
+      "id": "TC-37",
+      "name": "\"15 g of epoxy\" is not necessarily per part: inferred",
+      "input": "We use 15 g of epoxy.",
+      "expect": {
+        "inferred": { "production.shotSize": 15, "production.shotSizeUnit": "g" },
+        "known": { "material.chemistry": "epoxy" }
+      }
+    },
+    {
+      "id": "TC-38",
+      "name": "A clock time is not a mix ratio",
+      "input": "Our shift starts at 10:30 and we use epoxy.",
+      "expect": {
+        "unknown": ["mixing.ratio"],
+        "known": { "material.chemistry": "epoxy" }
+      }
+    },
+    {
+      "id": "TC-39",
+      "name": "\"500 to 600 parts per hour\" is a range, not a ratio",
+      "input": "We make 500 to 600 parts per hour.",
+      "expect": {
+        "review": { "production.productionRate": null },
+        "unknown": ["mixing.ratio"]
+      }
+    },
+    {
+      "id": "TC-40",
+      "name": "Mix ratio only: component count inferred from the number of terms",
+      "input": "Mix ratio of 100:1.",
+      "expect": {
+        "known": { "mixing.ratio": "100:1" },
+        "inferred": { "material.componentCount": 2 },
+        "platforms": "none"
+      }
+    },
+    {
+      "id": "TC-41",
+      "name": "Single component but a ratio too: the ratio is not hidden, it is flagged and asked about",
+      "input": "We use a single component epoxy mixed 10:1.",
+      "expect": {
+        "known": { "material.componentCount": 1, "material.chemistry": "epoxy", "mixing.ratio": "10:1" },
+        "next": { "field": "material.componentCount", "mode": "CLARIFY" },
+        "platforms": "none",
+        "flags": ["RATIO_COMPONENT_MISMATCH"],
+        "rfq": { "contains": ["Ratio: 10:1 (requires engineer review)", "Components: 1 (requires engineer review)"] }
+      }
+    },
+    {
+      "id": "TC-42",
+      "name": "Viscosity range in cP is not a value; the unit alone is kept",
+      "input": "The viscosity ranges from 3000 to 5000 cP.",
+      "expect": {
+        "review": { "properties.viscosityA": null, "properties.viscosityB": null },
+        "known": { "properties.viscosityUnit": "cP" }
+      }
+    },
+    {
+      "id": "TC-43",
+      "name": "Quantities with 'an hour' and 'a minute' phrasing",
+      "input": "We pot 120 modules an hour, about 2 g per part.",
+      "expect": {
+        "known": { "production.productionRate": 120, "production.productionUnit": "parts/hour", "production.shotSize": 2, "production.shotSizeUnit": "g" }
+      }
+    },
+    {
+      "id": "TC-44",
+      "name": "\"Approximately\" and \"about\" stay visible in the brief and the RFQ",
+      "input": "We pot approximately 500 parts per hour, about 15 g per part.",
+      "expect": {
+        "known": { "production.productionRate": 500, "production.shotSize": 15 },
+        "rfq": { "contains": ["Production: 500 parts/hour (approximate)", "Shot Size: 15 g (approximate)"] }
+      }
+    }
+  ]
+}

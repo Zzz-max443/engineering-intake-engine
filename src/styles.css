@@ -1,0 +1,9 @@
+/* Entry point. Plain CSS: the @imports are resolved by the browser in dev and inlined by Vite in the build. */
+@import './styles/tokens.css';
+@import './styles/base.css';
+@import './styles/layout.css';
+@import './styles/components.css';
+@import './styles/intake.css';
+@import './styles/brief.css';
+@import './styles/rfq.css';
+@import './styles/statusbar.css';

@@ -1,0 +1,279 @@
+/* ---- log ----------------------------------------------------------------------------------- */
+
+.log {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.entry {
+  display: grid;
+  gap: 5px;
+  padding-left: 12px;
+  border-left: 2px solid var(--line-strong);
+}
+
+.entry--user {
+  border-left-color: var(--accent);
+}
+
+.entry__who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 10.5px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.entry__who .tag {
+  margin-left: 0;
+}
+
+.entry__text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.entry__text--dim {
+  color: var(--text-dim);
+}
+
+.entry__prompt {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.entry__hint {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+/* Answered questions fade back; the one waiting for an answer is marked. */
+.entry--question {
+  opacity: 0.7;
+}
+
+.entry--question.is-active {
+  padding: 10px 12px;
+  border-left-color: var(--accent-text);
+  background: var(--surface-2);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  opacity: 1;
+}
+
+.understood {
+  margin-top: 3px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.understood__row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  gap: 3px 10px;
+  align-items: center;
+  padding: 7px 10px;
+  border-top: 1px solid var(--line);
+}
+
+.understood__row:first-child {
+  border-top: 0;
+}
+
+.understood__label {
+  font: 500 11px/1.3 var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.understood__value {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.understood__note {
+  grid-column: 2 / -1;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.entry-notice {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.entry-notice--warning {
+  border-color: var(--inferred-line);
+  background: var(--inferred-bg);
+  color: var(--text);
+}
+
+.entry-complete {
+  padding: 10px 12px;
+  border: 1px solid var(--known-line);
+  border-radius: var(--radius);
+  background: var(--known-bg);
+}
+
+/* ---- intro (before the first message) ---------------------------------------------------- */
+
+.intro {
+  display: grid;
+  gap: 10px;
+}
+
+.intro__lead {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.intro__body {
+  color: var(--text-dim);
+}
+
+.intro__label {
+  margin-top: 6px;
+  font: 600 10.5px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+}
+
+.examples {
+  display: grid;
+  gap: 6px;
+}
+
+.example {
+  padding: 8px 10px;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.example:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+/* ---- dock: the single place the user types ------------------------------------------------- */
+
+.dock {
+  padding: 12px 16px 14px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.dock__form {
+  display: grid;
+  gap: 10px;
+}
+
+.dock__label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  font: 600 10.5px/1.3 var(--font-mono);
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+}
+
+.dock__keys {
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.dock__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
+.dock__row .btn {
+  min-height: 40px;
+}
+
+.dock__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dock__actions .spacer {
+  flex: 1;
+}
+
+.dock__error {
+  margin: 0 16px 8px;
+  font-size: 13px;
+  color: var(--review);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.choice {
+  padding: 6px 11px;
+  background: var(--surface-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text);
+  transition: border-color 0.12s, background-color 0.12s;
+}
+
+.choice:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: #243447;
+}
+
+.choice:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 899.98px) {
+  .log {
+    flex: none;
+    max-height: 46vh;
+    min-height: 140px;
+  }
+}
+
+@media (max-width: 520px) {
+  .understood__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .understood__label {
+    grid-column: 1 / -1;
+  }
+
+  .understood__note {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,280 @@
+/* ---- buttons ------------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font: 600 11.5px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--accent-strong);
+  border-color: #3a7bc0;
+  color: #f4f8fc;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: #3478bf;
+}
+
+.btn--secondary {
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--text-faint);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--text-dim);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.btn--link {
+  padding: 0 6px;
+  background: transparent;
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.btn--link:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.btn--danger,
+.btn--danger:hover:not(:disabled) {
+  background: var(--review-bg);
+  border-color: var(--review-line);
+  color: var(--review);
+}
+
+@media (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+  }
+}
+
+/* ---- status marks and chips (shape + word, never colour alone) ----------------------------- */
+
+.mark {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  align-self: center;
+}
+
+.mark--known {
+  border-radius: 50%;
+  background: var(--known);
+}
+
+.mark--unknown {
+  border-radius: 50%;
+  border: 1.5px solid var(--unknown);
+}
+
+.mark--inferred {
+  background: var(--inferred);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  width: 10px;
+  height: 10px;
+}
+
+.mark--review {
+  background: var(--review);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  width: 10px;
+  height: 9px;
+}
+
+.mark--na {
+  height: 2px;
+  background: var(--text-faint);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 8px 1px 6px;
+  border: 1px solid var(--chip-line, var(--unknown-line));
+  border-radius: 3px;
+  background: var(--chip-bg, var(--unknown-bg));
+  color: var(--chip-fg, var(--unknown));
+  font: 600 10.5px/17px var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip--known {
+  --chip-fg: var(--known);
+  --chip-bg: var(--known-bg);
+  --chip-line: var(--known-line);
+}
+
+.chip--inferred {
+  --chip-fg: var(--inferred);
+  --chip-bg: var(--inferred-bg);
+  --chip-line: var(--inferred-line);
+}
+
+.chip--review {
+  --chip-fg: var(--review);
+  --chip-bg: var(--review-bg);
+  --chip-line: var(--review-line);
+}
+
+.chip--na {
+  --chip-fg: var(--text-faint);
+  --chip-bg: transparent;
+  --chip-line: var(--line);
+}
+
+/* ---- tags (priority / reason labels) and badges ---------------------------------------------- */
+
+.tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  font: 600 10px/16px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.tag--required {
+  border-color: rgba(140, 192, 238, 0.5);
+  color: var(--accent-text);
+}
+
+.tag--useful {
+  color: var(--text-dim);
+}
+
+.tag--optional {
+  border-style: dashed;
+  color: var(--text-faint);
+}
+
+.tag--clarify,
+.tag--inferred {
+  border-color: var(--inferred-line);
+  background: var(--inferred-bg);
+  color: var(--inferred);
+}
+
+.tag--review {
+  border-color: var(--review-line);
+  background: var(--review-bg);
+  color: var(--review);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 3px;
+  font: 600 11px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge--review {
+  background: var(--review-bg);
+  border: 1px solid var(--review-line);
+  color: var(--review);
+}
+
+.badge--review::before {
+  content: '';
+  width: 10px;
+  height: 9px;
+  background: currentColor;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+/* ---- form controls ------------------------------------------------------------------------- */
+
+.field {
+  display: block;
+  width: 100%;
+  padding: 9px 11px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--text);
+  line-height: 1.45;
+  resize: none;
+}
+
+.field::placeholder {
+  color: var(--text-faint);
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 196, 0.25);
+}
+
+.field:disabled {
+  opacity: 0.55;
+}
+
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.segment {
+  padding: 6px 12px;
+  background: transparent;
+  border: 0;
+  font: 600 11px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.segment + .segment {
+  border-left: 1px solid var(--line-strong);
+}
+
+.segment[aria-pressed='true'] {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+.segment:hover {
+  color: var(--text);
+}
